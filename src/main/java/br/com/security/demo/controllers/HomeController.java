@@ -7,9 +7,13 @@ import br.com.security.demo.service.UserService;
 import org.bson.json.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,8 +32,20 @@ public class HomeController {
     }
 
     @GetMapping
-    public List<User> findAll() {
-        return this.userService.findAll();
+    public List<UserDTO> findAll() {
+
+        ArrayList<UserDTO> usersDTO = new ArrayList<>();
+
+        userService.findAll().forEach(user -> {
+            UserDTO userDTO = UserDTO.builder()
+                    .id(user.getId())
+                    .login(user.getLogin())
+                    .cpf(user.getCpf())
+                    .build();
+            usersDTO.add(userDTO);
+        });
+
+        return usersDTO;
     }
 
     @GetMapping(value = "/{id}")
@@ -37,7 +53,12 @@ public class HomeController {
         Optional<User> userOptional = this.userService.findById(id);
 
         if (userOptional.isPresent()) {
-            return ResponseEntity.status(302).body(userOptional.get());
+            UserDTO userDTO = UserDTO.builder()
+                    .id(userOptional.get().getId())
+                    .login(userOptional.get().getLogin())
+                    .cpf(userOptional.get().getCpf())
+                    .build();
+            return ResponseEntity.status(302).body(userDTO);
         } else {
             return ResponseEntity.status(404).body(messageService.sendMessage("Usuário não encontrado"));
         }
@@ -63,6 +84,7 @@ public class HomeController {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
             this.userService.save(user);
             UserDTO userDTO = UserDTO.builder()
+                    .id(user.getId())
                     .login(user.getLogin())
                     .cpf(user.getCpf())
                     .build();
@@ -77,7 +99,12 @@ public class HomeController {
         if (userOptional.isPresent()) {
             userOptional.get().setId(user.getId());
             this.userService.save(user);
-            return ResponseEntity.status(200).body(user);
+            UserDTO userDTO = UserDTO.builder()
+                    .id(user.getId())
+                    .login(user.getLogin())
+                    .cpf(user.getCpf())
+                    .build();
+            return ResponseEntity.status(200).body(userDTO);
         } else {
             return ResponseEntity.status(404).body(messageService.sendMessage("O usuário não existe"));
         }
